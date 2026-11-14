@@ -4,8 +4,8 @@ import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Project Aligner",
-  description: "Keep your organization aligned to its mission.",
+  title: "Aligner",
+  description: "A living map of how your business actually works.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
