@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AskClaude } from "@/components/ask-claude";
 
 export default function Home() {
@@ -14,6 +15,12 @@ export default function Home() {
           Keep every team aligned and accountable to the mission.
         </p>
       </div>
+      <Link
+        href="/map"
+        className="rounded-full border border-zinc-300 px-6 py-3 text-sm font-medium transition hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900"
+      >
+        Open the reality map →
+      </Link>
       <AskClaude />
     </main>
   );
