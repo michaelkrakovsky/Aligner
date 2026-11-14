@@ -15,8 +15,14 @@ import {
   type NodeChange,
   type Connection,
 } from "@xyflow/react";
-import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { autoLayout, computeLanes } from "@/lib/map/layout";
 import {
   addNode,
@@ -28,8 +34,6 @@ import {
   validateMap,
 } from "@/lib/map/operations";
 import type { RealityMap } from "@/lib/map/schema";
-import { loadMap, saveMap } from "@/lib/map/storage";
-import { blankMap, medicalTestingTemplate } from "@/lib/map/template";
 import {
   LaneNode,
   StepNode,
@@ -47,26 +51,24 @@ type Selection =
   | null;
 type Size = { width: number; height: number };
 
-function getStorage(): Storage | undefined {
-  try {
-    return window.localStorage;
-  } catch {
-    return undefined;
-  }
-}
+type FlowMapperProps = {
+  initialMap: RealityMap;
+  /** Called after every edit with the latest map, e.g. to save it. */
+  onChange?: (map: RealityMap) => void;
+  /** Shown at the right of the header, e.g. save status. */
+  status?: ReactNode;
+};
 
-export function FlowMapper({ initialMap }: { initialMap?: RealityMap }) {
+export function FlowMapper(props: FlowMapperProps) {
   return (
     <ReactFlowProvider>
-      <FlowMapperInner initialMap={initialMap} />
+      <FlowMapperInner {...props} />
     </ReactFlowProvider>
   );
 }
 
-function FlowMapperInner({ initialMap }: { initialMap?: RealityMap }) {
-  const [map, setMap] = useState<RealityMap>(
-    () => initialMap ?? loadMap(getStorage()) ?? medicalTestingTemplate(),
-  );
+function FlowMapperInner({ initialMap, onChange, status }: FlowMapperProps) {
+  const [map, setMap] = useState<RealityMap>(initialMap);
   const [selection, setSelection] = useState<Selection>(null);
   const [ownerFilter, setOwnerFilter] = useState<string>("");
   // React Flow measures nodes once; keeping the sizes avoids re-measuring
@@ -74,7 +76,18 @@ function FlowMapperInner({ initialMap }: { initialMap?: RealityMap }) {
   const [measured, setMeasured] = useState<Record<string, Size>>({});
   const { fitView } = useReactFlow();
 
-  useEffect(() => saveMap(getStorage(), map), [map]);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    onChangeRef.current?.(map);
+  }, [map]);
 
   const update = useCallback(
     (fn: (m: RealityMap) => RealityMap) => setMap((m) => fn(m)),
@@ -235,17 +248,6 @@ function FlowMapperInner({ initialMap }: { initialMap?: RealityMap }) {
     window.setTimeout(() => void fitView({ duration: 300 }), 50);
   }, [update, fitView]);
 
-  const replaceMap = useCallback(
-    (next: RealityMap, message: string) => {
-      if (!window.confirm(message)) return;
-      setMap(next);
-      setSelection(null);
-      setOwnerFilter("");
-      window.setTimeout(() => void fitView({ duration: 300 }), 50);
-    },
-    [fitView],
-  );
-
   const selectedNode =
     selection?.kind === "node"
       ? map.nodes.find((n) => n.id === selection.id)
@@ -259,11 +261,8 @@ function FlowMapperInner({ initialMap }: { initialMap?: RealityMap }) {
     "rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-800 hover:bg-zinc-100 disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800";
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-full min-w-0 flex-1 flex-col">
       <header className="flex flex-wrap items-center gap-3 border-b border-zinc-200 px-4 py-2.5 dark:border-zinc-800">
-        <Link href="/" className="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-500">
-          Aligner
-        </Link>
         <input
           aria-label="Map name"
           value={map.name}
@@ -299,29 +298,7 @@ function FlowMapperInner({ initialMap }: { initialMap?: RealityMap }) {
               </option>
             ))}
           </select>
-          <select
-            aria-label="Start from"
-            className={toolbarButton}
-            value=""
-            onChange={(e) => {
-              const choice = e.target.value;
-              e.target.value = "";
-              if (choice === "template") {
-                replaceMap(
-                  medicalTestingTemplate(),
-                  "Replace this map with the medical testing template? Your current map will be lost.",
-                );
-              } else if (choice === "blank") {
-                replaceMap(blankMap(), "Start a blank map? Your current map will be lost.");
-              }
-            }}
-          >
-            <option value="" disabled>
-              New map…
-            </option>
-            <option value="template">Medical testing template</option>
-            <option value="blank">Blank map</option>
-          </select>
+          {status}
         </div>
       </header>
 

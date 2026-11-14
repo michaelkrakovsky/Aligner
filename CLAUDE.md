@@ -8,7 +8,15 @@ Business software that keeps organizations aligned and accountable to their core
 - Next.js (App Router, `src/` dir) + TypeScript + Tailwind CSS
 - AI: Vercel AI SDK (`ai`) with the Anthropic provider (`@ai-sdk/anthropic`); model set by `ANTHROPIC_MODEL`
 - Hosting: Vercel (preview deploy on every PR, production on `main`)
-- Planned: Supabase (Postgres + auth) when we need data and users
+- Data and auth: Supabase (Postgres, email + Google sign in) via `@supabase/ssr`; schema in `supabase/migrations/`
+- Map canvas: React Flow (`@xyflow/react`) with dagre auto layout
+
+## Data and auth
+- `src/proxy.ts` refreshes the session and routes signed-out people to `/login`.
+- Server code gets a user-scoped client from `src/lib/supabase/server.ts`; row level security limits every query to the owner's rows. Never use a service-role key in the app.
+- Map reads and writes go through `src/lib/maps/repository.ts`; server actions in `src/app/maps/actions.ts` re-check the session and validate input with zod.
+- Map rules (adding nodes, variations, validation) are pure functions in `src/lib/map/`.
+- Cache Components is on: anything that reads cookies or params must render inside `<Suspense>`.
 
 ## Conventions
 - Server code calls Claude; never expose `ANTHROPIC_API_KEY` to the client.
@@ -19,7 +27,9 @@ Business software that keeps organizations aligned and accountable to their core
 ## Testing
 - Tests never call the real Claude API. Create models only through `getModel()` in `src/lib/model.ts`; tests mock it with the helpers in `src/test/mock-model.ts`.
 - Unit tests sit next to the code as `*.test.ts(x)` (Vitest). Component tests start with `// @vitest-environment jsdom`.
-- E2E tests live in `e2e/` (Playwright) and intercept `/api/*` calls in the browser.
+- Tests never call real Supabase: repository tests use `src/test/fake-supabase.ts`; component tests mock the server action modules.
+- Canvas component tests call `stubReactFlowDom()` from `src/test/react-flow-jsdom.ts` and select nodes with `fireEvent.click`.
+- E2E tests live in `e2e/` (Playwright) and cover signed-out flows (CI has no Supabase project).
 - CI (`.github/workflows/ci.yml`) runs all of this on every PR and push to `main`.
 
 ## Commands

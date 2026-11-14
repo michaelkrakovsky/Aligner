@@ -97,9 +97,9 @@ export function medicalTestingTemplate(): RealityMap {
 
 export function blankMap(): RealityMap {
   return {
-    id: "map_untitled",
+    id: "map_new",
     workspaceId: "ws_default",
-    name: "Untitled map",
+    name: "Untitled journey",
     description: "",
     version: 1,
     roles: [],
