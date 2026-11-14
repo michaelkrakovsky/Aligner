@@ -1,5 +1,5 @@
-import { anthropic } from "@ai-sdk/anthropic";
 import { generateText } from "ai";
+import { getModel } from "@/lib/model";
 
 export async function POST() {
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -11,7 +11,7 @@ export async function POST() {
 
   try {
     const { text } = await generateText({
-      model: anthropic(process.env.ANTHROPIC_MODEL ?? "claude-sonnet-5-5"),
+      model: getModel(),
       prompt:
         "Say hello world to the founder of Project Aligner, a tool that keeps organizations aligned to their mission. One short, warm sentence.",
     });
