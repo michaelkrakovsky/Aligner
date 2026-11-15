@@ -4,12 +4,14 @@ import {
   addRole,
   addVariation,
   connect,
+  linkDoc,
+  unlinkDoc,
   removeNode,
   removeRole,
   updateNode,
   validateMap,
 } from "./operations";
-import { RealityMapSchema, type RealityMap } from "./schema";
+import { LinkedDocSchema, RealityMapSchema, type RealityMap } from "./schema";
 import { blankMap, medicalTestingTemplate } from "./template";
 
 function twoNodeMap(): RealityMap {
@@ -140,5 +142,59 @@ describe("medicalTestingTemplate", () => {
       "Results never arrive",
       "Results do not make sense",
     ]);
+  });
+});
+
+describe("linked docs", () => {
+  const doc = {
+    type: "google_doc" as const,
+    fileId: "1AbCdEfGhIjKlMnOp",
+    title: "Facility complaint SOP",
+    url: "https://docs.google.com/document/d/1AbCdEfGhIjKlMnOp/edit",
+    modifiedTime: "2026-11-14T09:30:00Z",
+    lastModifiedBy: "Dana Ops",
+    syncedAt: "2026-11-15T12:00:00Z",
+  };
+
+  it("links a doc once and refreshes it in place", () => {
+    let map = linkDoc(twoNodeMap(), "b", doc);
+    map = linkDoc(map, "b", { ...doc, title: "Renamed SOP" });
+    const b = map.nodes.find((n) => n.id === "b")!;
+    expect(b.docs).toEqual([{ ...doc, title: "Renamed SOP" }]);
+    expect(map.nodes.find((n) => n.id === "start")!.docs).toBeUndefined();
+  });
+
+  it("unlinks a doc", () => {
+    const map = unlinkDoc(linkDoc(twoNodeMap(), "b", doc), "b", doc.fileId);
+    expect(map.nodes.find((n) => n.id === "b")!.docs).toEqual([]);
+  });
+
+  it("still loads maps saved before docs existed", () => {
+    const old = JSON.parse(JSON.stringify(twoNodeMap()));
+    expect(RealityMapSchema.safeParse(old).success).toBe(true);
+    expect(RealityMapSchema.safeParse(linkDoc(old, "b", doc)).success).toBe(true);
+  });
+
+  it("rejects a doc link that isn't a URL", () => {
+    const bad = linkDoc(twoNodeMap(), "b", { ...doc, url: "javascript:alert(1)" });
+    expect(RealityMapSchema.safeParse(bad).success).toBe(false);
+  });
+});
+
+describe("linked doc URLs", () => {
+  it("accept only https Google Docs links", () => {
+    const base = {
+      type: "google_doc" as const,
+      fileId: "1AbCdEfGhIjKlMnOp",
+      title: "SOP",
+      modifiedTime: null,
+      lastModifiedBy: null,
+      syncedAt: "2026-11-15T12:00:00Z",
+    };
+    const ok = (url: string) => LinkedDocSchema.safeParse({ ...base, url }).success;
+    expect(ok("https://docs.google.com/document/d/1AbCdEfGhIjKlMnOp/edit")).toBe(true);
+    expect(ok("http://docs.google.com/document/d/x")).toBe(false);
+    expect(ok("https://evil.example/document/d/x")).toBe(false);
+    expect(ok("javascript:alert(1)")).toBe(false);
   });
 });

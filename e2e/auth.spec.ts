@@ -33,3 +33,8 @@ test("a failed sign in link shows an error", async ({ page }) => {
     page.getByRole("alert").filter({ hasText: "didn't work" }),
   ).toBeVisible();
 });
+
+test("connecting Google Docs requires signing in first", async ({ page }) => {
+  await page.goto("/api/google/connect");
+  await expect(page).toHaveURL(/\/login$/);
+});

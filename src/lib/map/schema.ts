@@ -54,6 +54,26 @@ export const VariationSchema = z.object({
 });
 export type Variation = z.infer<typeof VariationSchema>;
 
+/** Google Drive file ids are letters, digits, - and _. */
+export const DriveFileIdSchema = z.string().regex(/^[A-Za-z0-9_-]{10,200}$/);
+
+/**
+ * A Google Doc linked to a node. Aligner keeps only the link and a few
+ * details read from Google (title, last edit); the doc stays in Google.
+ */
+export const LinkedDocSchema = z.object({
+  type: z.literal("google_doc"),
+  fileId: DriveFileIdSchema,
+  title: z.string().max(300),
+  /** Only Google Docs links, so a saved map can never carry a script URL. */
+  url: z.url({ protocol: /^https$/, hostname: /^docs\.google\.com$/ }).max(2000),
+  modifiedTime: z.string().max(40).nullable(),
+  lastModifiedBy: z.string().max(200).nullable(),
+  /** When Aligner last read these details from Google (ISO time). */
+  syncedAt: z.string().max(40),
+});
+export type LinkedDoc = z.infer<typeof LinkedDocSchema>;
+
 export const MapNodeSchema = z.object({
   id: z.string().min(1),
   title: z.string().max(120),
@@ -65,6 +85,8 @@ export const MapNodeSchema = z.object({
   ownerRoleId: z.string().nullable(),
   position: z.object({ x: z.number(), y: z.number() }),
   variation: VariationSchema.optional(),
+  /** Linked artifacts; optional so maps saved before this field still load. */
+  docs: z.array(LinkedDocSchema).max(50).optional(),
 });
 export type MapNode = z.infer<typeof MapNodeSchema>;
 

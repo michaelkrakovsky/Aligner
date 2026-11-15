@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { reorderJourneysAction, saveJourneyAction } from "@/app/maps/actions";
+import { GoogleDocsProvider } from "@/components/google/google-docs-context";
 import { FlowMapper } from "@/components/map/flow-mapper";
 import type { RealityMap } from "@/lib/map/schema";
 import type { JourneySummary } from "@/lib/maps/repository";
@@ -17,10 +18,12 @@ export function Workspace({
   journeys: initialJourneys,
   map,
   email,
+  googleConnected = false,
 }: {
   journeys: JourneySummary[];
   map: RealityMap;
   email: string | null;
+  googleConnected?: boolean;
 }) {
   const [journeys, setJourneys] = useState(initialJourneys);
   const [status, setStatus] = useState<SaveStatus>("saved");
@@ -97,11 +100,13 @@ export function Workspace({
         onReorder={onReorder}
         error={sidebarError}
       />
-      <FlowMapper
-        initialMap={map}
-        onChange={onChange}
-        status={<SaveIndicator status={status} />}
-      />
+      <GoogleDocsProvider initiallyConnected={googleConnected}>
+        <FlowMapper
+          initialMap={map}
+          onChange={onChange}
+          status={<SaveIndicator status={status} />}
+        />
+      </GoogleDocsProvider>
     </div>
   );
 }
