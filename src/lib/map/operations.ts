@@ -1,5 +1,6 @@
 import {
   EMPTY_VARIATION,
+  type LinkedDoc,
   type MapEdge,
   type MapNode,
   type RealityMap,
@@ -218,4 +219,33 @@ export function validateMap(map: RealityMap): MapIssue[] {
     }
   }
   return issues;
+}
+
+/** Links a doc to a node, or refreshes its details if it's already linked. */
+export function linkDoc(map: RealityMap, nodeId: string, doc: LinkedDoc): RealityMap {
+  return {
+    ...map,
+    nodes: map.nodes.map((n) => {
+      if (n.id !== nodeId) return n;
+      const docs = n.docs ?? [];
+      const exists = docs.some((d) => d.fileId === doc.fileId);
+      return {
+        ...n,
+        docs: exists
+          ? docs.map((d) => (d.fileId === doc.fileId ? doc : d))
+          : [...docs, doc],
+      };
+    }),
+  };
+}
+
+export function unlinkDoc(map: RealityMap, nodeId: string, fileId: string): RealityMap {
+  return {
+    ...map,
+    nodes: map.nodes.map((n) =>
+      n.id === nodeId
+        ? { ...n, docs: (n.docs ?? []).filter((d) => d.fileId !== fileId) }
+        : n,
+    ),
+  };
 }

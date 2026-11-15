@@ -3,8 +3,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { RealityMap } from "@/lib/map/schema";
+import { linkDoc } from "@/lib/map/operations";
 import { medicalTestingTemplate } from "@/lib/map/template";
 import { stubReactFlowDom } from "@/test/react-flow-jsdom";
+// Server actions only run on the server; the canvas tests never call them.
+vi.mock("@/app/maps/google-actions", () => ({}));
+
 import { FlowMapper } from "./flow-mapper";
 
 beforeEach(() => stubReactFlowDom());
@@ -69,5 +73,24 @@ describe("FlowMapper", () => {
     await userEvent.type(name, "Results delivery");
 
     expect(lastMap(onChange).name).toBe("Results delivery");
+  });
+});
+
+describe("FlowMapper linked docs", () => {
+  it("shows a Google Doc icon on nodes with linked docs", () => {
+    const map = linkDoc(medicalTestingTemplate(), "missing", {
+      type: "google_doc",
+      fileId: "1AbCdEfGhIjKlMnOp",
+      title: "Missing results escalation SOP",
+      url: "https://docs.google.com/document/d/1AbCdEfGhIjKlMnOp/edit",
+      modifiedTime: null,
+      lastModifiedBy: null,
+      syncedAt: "2026-11-15T12:00:00Z",
+    });
+    render(<FlowMapper initialMap={map} />);
+
+    const icon = screen.getByTestId("map-node-docs-missing");
+    expect(icon.getAttribute("title")).toBe("Linked: Missing results escalation SOP");
+    expect(screen.queryByTestId("map-node-docs-visit")).toBeNull();
   });
 });

@@ -17,6 +17,8 @@ Business software that keeps organizations aligned and accountable to their core
 - Map reads and writes go through `src/lib/maps/repository.ts`; server actions in `src/app/maps/actions.ts` re-check the session and validate input with zod.
 - Map rules (adding nodes, variations, validation) are pure functions in `src/lib/map/`.
 - Cache Components is on: anything that reads cookies or params must render inside `<Suspense>`.
+- Google Docs linking uses only the `drive.file` scope and only reads file metadata (`src/lib/google/`). Refresh tokens are encrypted with `GOOGLE_TOKEN_ENCRYPTION_KEY` before they reach Supabase. Never request broader Google scopes without asking.
+- Tests never call Google: stub `fetch`, or mock `@/app/maps/google-actions` in component tests.
 
 ## Conventions
 - Server code calls Claude; never expose `ANTHROPIC_API_KEY` to the client.

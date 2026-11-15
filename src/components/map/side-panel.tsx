@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { GoogleDocIcon } from "@/components/google/google-doc-icon";
+import { useGoogleDocs } from "@/components/google/google-docs-context";
+import { LinkedDocs } from "./linked-docs";
 import {
   addRole,
   removeEdge,
@@ -224,6 +227,8 @@ export function NodePanel({
         </Section>
       )}
 
+      <LinkedDocs node={node} update={update} />
+
       <Issues issues={issues} />
 
       <div className="flex flex-wrap gap-2 border-t border-zinc-200 pt-4 dark:border-zinc-800">
@@ -314,6 +319,8 @@ export function MapPanel({
         />
       </Field>
 
+      <GoogleConnection />
+
       <Section title="Roles">
         <ul className="flex flex-col gap-1">
           {map.roles.map((r) => {
@@ -382,5 +389,35 @@ export function MapPanel({
         )}
       </Section>
     </div>
+  );
+}
+
+/** Shows whether Google Docs is connected, with a way to disconnect. */
+function GoogleConnection() {
+  const google = useGoogleDocs();
+  const [busy, setBusy] = useState(false);
+  if (!google?.available || !google.connected) return null;
+  return (
+    <Section title="Google Docs">
+      <div className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+        <GoogleDocIcon size={16} />
+        <span className="flex-1">Connected, read only for docs you pick</span>
+        <button
+          type="button"
+          disabled={busy}
+          className="text-xs font-medium text-zinc-500 hover:text-rose-600 disabled:opacity-50"
+          onClick={async () => {
+            setBusy(true);
+            try {
+              await google.disconnect();
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          Disconnect
+        </button>
+      </div>
+    </Section>
   );
 }

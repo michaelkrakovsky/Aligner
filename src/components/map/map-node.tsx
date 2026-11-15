@@ -8,6 +8,7 @@ import {
   type MapNode,
 } from "@/lib/map/schema";
 import { NODE_HEIGHT, NODE_WIDTH } from "@/lib/map/layout";
+import { GoogleDocIcon } from "@/components/google/google-doc-icon";
 
 export const LAYER_STYLES: Record<
   Layer,
@@ -44,6 +45,7 @@ export function StepNode({ data, selected }: NodeProps<StepFlowNode>) {
   const { node, ownerName, issueCount, dimmed } = data;
   const isVariation = node.type === "variation";
   const isTerminal = node.type === "start" || node.type === "end";
+  const docCount = node.docs?.length ?? 0;
   const style = LAYER_STYLES[node.layer];
 
   return (
@@ -85,10 +87,24 @@ export function StepNode({ data, selected }: NodeProps<StepFlowNode>) {
         </div>
         <div className="flex items-center gap-2 text-xs text-zinc-500">
           <span className="truncate">{ownerName ?? "No owner"}</span>
+          {docCount > 0 && (
+            <span
+              data-testid={`map-node-docs-${node.id}`}
+              title={`Linked: ${node.docs!.map((d) => d.title || "Untitled document").join(", ")}`}
+              className="ml-auto flex shrink-0 items-center gap-0.5"
+            >
+              <GoogleDocIcon size={13} />
+              {docCount > 1 && (
+                <span className="text-[10px] font-semibold text-zinc-600 dark:text-zinc-300">
+                  {docCount}
+                </span>
+              )}
+            </span>
+          )}
           {issueCount > 0 && (
             <span
               title={`${issueCount} issue${issueCount === 1 ? "" : "s"}`}
-              className="ml-auto shrink-0 rounded-full bg-amber-100 px-1.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900/60 dark:text-amber-200"
+              className={`${docCount > 0 ? "" : "ml-auto "}shrink-0 rounded-full bg-amber-100 px-1.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900/60 dark:text-amber-200`}
             >
               ! {issueCount}
             </span>
